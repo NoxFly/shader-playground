@@ -6,10 +6,12 @@ Same use as https://shadertoy.com, but for desktop environment.
 
 Created using C++ 17, OpenGL 4.6, GLFW 3.3.8, GLEW 2.2.0 for debug and GLEW 2.1.0 for release, and GLM 0.9.9.
 
-IDE used : Visual Studio 2022.
+IDE used : Visual Studio 2022, CMake project. Available on Windows, Linux and MacOS.
 
 
 ## How to use
+
+All further paths are relative to the binary's folder (where the executable is).
 
 When running the program inside Visual Studio 2022 or the executable, you have a terminal waiting for your input.<br>
 It explains you everything you need to know.
@@ -68,7 +70,8 @@ The `zoom` and `center` uniforms are updated consequently.
 ## More informations
 
 - Hot-reload does not work for now.
-- circular dependency between two glsl is not checked.
+- Circular dependency between two glsl is not checked.
+- Zoom is not implemented yet.
 
 
 ## Author
