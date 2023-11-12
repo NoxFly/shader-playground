@@ -16,7 +16,7 @@ App::App():
 	m_realWidth(m_windowWidth),
 	m_realHeight(m_windowHeight),
 	m_frustrum{ 90.f, (float)m_windowWidth / (float)m_windowHeight, 0.1f, 1000.f },
-	m_shaderId(-1),
+	m_shader{},
 	m_surface{ 0, 0 },
 	m_fractalName("loop"),
 	m_uniforms{},
@@ -48,9 +48,7 @@ void App::close() {
 		glDeleteBuffers(1, &m_surface.VBO);
 	}
 
-	if (m_shaderId > -1) {
-		glDeleteProgram(m_shaderId);
-	}
+	deleteShader(m_shader);
 
 	if (m_window != nullptr) {
 		glfwDestroyWindow(m_window);
@@ -92,7 +90,7 @@ void App::run() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
-		glUseProgram(m_shaderId);
+		glUseProgram(m_shader.id);
 		glBindVertexArray(m_surface.VAO);
 
 		sendUniforms();
@@ -106,11 +104,14 @@ void App::run() {
 		glfwSwapBuffers(m_window);
 		glfwPollEvents();
 
-		GLenum err = glGetError();
+		// This is for debug purpose only
+		// it is spamming "1282" error code in certain cases
+		// because not uniforms are used in the shader
+		/*GLenum err = glGetError();
 
 		if (err != GL_NO_ERROR) {
 			std::cerr << "Error: " << err << std::endl;
-		}
+		}*/
 	}
 
 	if (m_needEscape) {
@@ -194,7 +195,7 @@ void App::onKey(int key, int scancode, int action, int mods) {
 	else if (action == GLFW_RELEASE) {
 		switch (key) {
 			case GLFW_KEY_F5:
-				initShader();
+				refreshShader();
 				break;
 			case GLFW_KEY_F11:
 				toggleFullscreen();
@@ -282,9 +283,9 @@ void App::initGLEW() {
 
 
 bool App::initShader() {
-	deleteShader(m_shaderId); // destroy previous shader if exists
+	deleteShader(m_shader); // destroy previous shader if exists
 
-	if (!loadShader(m_shaderId, m_fractalName)) {
+	if (!loadShader(m_shader, m_fractalName)) {
 		return false;
 	}
 
@@ -301,17 +302,17 @@ bool App::initShader() {
 	m_uniforms.zoom				= { -1, 0 };
 
 	// retrieve layout (location = ?) for UNIFORMS
-	m_uniforms.mvp.id			= glGetUniformLocation(m_shaderId, "MVP");
-	m_uniforms.m.id				= glGetUniformLocation(m_shaderId, "M");
-	m_uniforms.v.id				= glGetUniformLocation(m_shaderId, "V");
-	m_uniforms.p.id				= glGetUniformLocation(m_shaderId, "P");
-	m_uniforms.mouse.id			= glGetUniformLocation(m_shaderId, "ivMouse");
-	m_uniforms.center.id		= glGetUniformLocation(m_shaderId, "fvCenter");
-	m_uniforms.resolution.id	= glGetUniformLocation(m_shaderId, "uvResolution");
-	m_uniforms.time.id			= glGetUniformLocation(m_shaderId, "fTime");
-	m_uniforms.delta.id			= glGetUniformLocation(m_shaderId, "fDelta");
-	m_uniforms.ratio.id			= glGetUniformLocation(m_shaderId, "fRatio");
-	m_uniforms.zoom.id			= glGetUniformLocation(m_shaderId, "fZoom");
+	m_uniforms.mvp.id			= glGetUniformLocation(m_shader.id, "MVP");
+	m_uniforms.m.id				= glGetUniformLocation(m_shader.id, "M");
+	m_uniforms.v.id				= glGetUniformLocation(m_shader.id, "V");
+	m_uniforms.p.id				= glGetUniformLocation(m_shader.id, "P");
+	m_uniforms.mouse.id			= glGetUniformLocation(m_shader.id, "ivMouse");
+	m_uniforms.center.id		= glGetUniformLocation(m_shader.id, "fvCenter");
+	m_uniforms.resolution.id	= glGetUniformLocation(m_shader.id, "uvResolution");
+	m_uniforms.time.id			= glGetUniformLocation(m_shader.id, "fTime");
+	m_uniforms.delta.id			= glGetUniformLocation(m_shader.id, "fDelta");
+	m_uniforms.ratio.id			= glGetUniformLocation(m_shader.id, "fRatio");
+	m_uniforms.zoom.id			= glGetUniformLocation(m_shader.id, "fZoom");
 
 	return true;
 }
@@ -352,4 +353,10 @@ void App::refreshSurface() {
 	}
 
 	initSurface();
+}
+
+void App::refreshShader() {
+	if (!replaceFragmentShader(m_shader, m_fractalName)) {
+		std::cerr << "Error: failed to reload shader." << std::endl;
+	}
 }

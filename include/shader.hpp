@@ -11,5 +11,13 @@
 #include <iostream>
 #include <GL/glew.h>
 
-bool loadShader(GLuint& shaderId, const std::string& name);
-void deleteShader(GLuint programId);
+struct shader {
+	GLuint id = 0;
+	GLuint vertexId = 0;
+	GLuint fragmentId = 0;
+};
+
+bool loadShader(shader& shader, const std::string& name);
+void deleteShader(shader& shader);
+
+bool replaceFragmentShader(shader& shader, const std::string& name);

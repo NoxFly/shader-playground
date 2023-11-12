@@ -239,41 +239,74 @@ bool compileShader(GLuint& shader, const std::string& type, const std::string& f
     return true;
 }
 
-void deleteShader(GLuint programId) {
-    if (glIsProgram(programId) == GL_TRUE) {
-        glDeleteProgram(programId);
+void deleteShader(shader& shader) {
+    if (glIsProgram(shader.id) == GL_TRUE) {
+        glDeleteProgram(shader.id);
+        shader.id = -1;
+    }
+
+    if (glIsShader(shader.vertexId) == GL_TRUE) {
+        glDeleteShader(shader.vertexId);
+        shader.vertexId = -1;
+    }
+
+    if (glIsShader(shader.fragmentId) == GL_TRUE) {
+        glDeleteShader(shader.fragmentId);
+        shader.fragmentId = -1;
     }
 }
 
-bool loadShader(GLuint& shaderId, const std::string& name) {
+bool loadShader(shader& shader, const std::string& name) {
     // Compile vertex shader and fragment shader
-    GLuint vertexId = 0,
-           fragmentId = 0;
-
-    if (!compileShader(vertexId, "VERTEX", name)) {
+    if (!compileShader(shader.vertexId, "VERTEX", name)) {
         return false;
     }
 
-    if (!compileShader(fragmentId, "FRAGMENT", name)) {
-        glDeleteShader(vertexId);
+    if (!compileShader(shader.fragmentId, "FRAGMENT", name)) {
+        glDeleteShader(shader.vertexId);
         return false;
     }
 
     // shader Program
-    shaderId = glCreateProgram();
-    glAttachShader(shaderId, vertexId);
-    glAttachShader(shaderId, fragmentId);
+    shader.id = glCreateProgram();
+    glAttachShader(shader.id, shader.vertexId);
+    glAttachShader(shader.id, shader.fragmentId);
 
-    glLinkProgram(shaderId);
+    glLinkProgram(shader.id);
 
     // delete the shaders as they're linked into our program now and no longer necessary
-    glDeleteShader(vertexId);
-    glDeleteShader(fragmentId);
+    //glDeleteShader(shader.vertexId);
+    //glDeleteShader(shader.fragmentId);
 
-    if (!checkCompileErrors(shaderId, "PROGRAM")) {
-        glDeleteProgram(shaderId);
+    if (!checkCompileErrors(shader.id, "PROGRAM")) {
+        deleteShader(shader);
         return false;
     }
 
     return true;
+}
+
+
+bool replaceFragmentShader(shader& shader, const std::string& name) {
+    GLuint newFragmentId;
+
+    if (!compileShader(newFragmentId, "FRAGMENT", name)) {
+		return false;
+	}
+
+	glDetachShader(shader.id, shader.fragmentId);
+	glDeleteShader(shader.fragmentId);
+
+	glAttachShader(shader.id, newFragmentId);
+
+	glLinkProgram(shader.id);
+
+    shader.fragmentId = newFragmentId;
+
+    if (!checkCompileErrors(shader.id, "PROGRAM")) {
+        deleteShader(shader);
+		return false;
+	}
+
+	return true;
 }

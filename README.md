@@ -38,7 +38,9 @@ You can use the `#include <path/to/chunk>` directive to include other `.glsl` fi
 Your fragment shader file must contain a `vec3 mainImage()` function, which will be called by the `main()` fragment shader function at runtime.
 You must assign a color to the predefined `vec4 FragColor` variable to set the pixel's color.
 
-**Note :** Remember to setup your project's paths correctly to GLFW, GLEW and GLM !
+No circular dependencies can happen, because this directive is handled only in the `.frag` files, and only `.glsl` can be included.
+
+**Note :** Remember to setup your project's paths correctly to GLFW, GLEW and GLM with the config.cmake file !
 
 
 ### Global variables
@@ -69,8 +71,6 @@ The `zoom` and `center` uniforms are updated consequently.
 
 ## More informations
 
-- Hot-reload does not work for now.
-- Circular dependency between two glsl is not checked.
 - Zoom is not implemented yet.
 
 

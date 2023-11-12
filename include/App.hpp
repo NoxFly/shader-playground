@@ -94,6 +94,8 @@ class App {
 
 		void refreshResolution();
 		void refreshSurface();
+		void refreshShader();
+
 		void sendUniforms();
 
 		void createWindow();
@@ -107,7 +109,7 @@ class App {
 		GLFWwindow* m_window;
 		GLuint m_windowWidth, m_windowHeight, m_realWidth, m_realHeight;
 		frustrum m_frustrum;
-		GLuint m_shaderId;
+		shader m_shader;
 		model m_surface;
 		std::string m_fractalName;
 		uniforms m_uniforms;
