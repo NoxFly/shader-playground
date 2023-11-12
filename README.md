@@ -36,6 +36,8 @@ You can use the `#include <path/to/chunk>` directive to include other `.glsl` fi
 Your fragment shader file must contain a `vec3 mainImage()` function, which will be called by the `main()` fragment shader function at runtime.
 You must assign a color to the predefined `vec4 FragColor` variable to set the pixel's color.
 
+**Note :** Remember to setup your project's paths correctly to GLFW, GLEW and GLM !
+
 
 ### Global variables
 
