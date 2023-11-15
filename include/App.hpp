@@ -21,6 +21,13 @@
 #include "shader.hpp"
 #include "modelLoader.hpp"
 
+#define OPENGL_VERSION_MAJOR 4
+#define OPENGL_VERSION_MINOR 6
+
+#define MOUSE_BTN_COUNT 3
+#define KEY_SPECIAL_COUNT 4
+#define KEY_FLAGS_COUNT 10
+
 
 struct frustrum {
 	float fov;
@@ -57,7 +64,8 @@ struct uniforms {
 		time,
 		delta,
 		ratio,
-		zoom;
+		zoom,
+		increment;
 };
 
 struct MVP {
@@ -65,6 +73,13 @@ struct MVP {
 	glm::mat4 v;
 	glm::mat4 p;
 	glm::mat4 mvp;
+};
+
+struct FPSCounter {
+	float currentTime = 0;
+	float lastTime = 0;
+	float lastFrame = 0;
+	float nbFrames = 0;
 };
 
 enum windowMode {
@@ -96,23 +111,48 @@ class App {
 		void refreshSurface();
 		void refreshShader();
 
+		void reset();
+
 		void sendUniforms();
 
 		void createWindow();
 
+		void updateFPS();
+
 		void onKey(int key, int scancode, int action, int mods);
+		void onMouseButton(int button, int action, int mods);
 		void onMouseMove(double xpos, double ypos);
+		void onWindowResize(int width, int height);
 
 		void toggleFullscreen();
+		void toggleVSync();
 
 		windowMode m_windowMode;
 		GLFWwindow* m_window;
 		GLuint m_windowWidth, m_windowHeight, m_realWidth, m_realHeight;
 		frustrum m_frustrum;
+
 		shader m_shader;
 		model m_surface;
+		
 		std::string m_fractalName;
 		uniforms m_uniforms;
 		MVP m_mvp;
+		
+		FPSCounter m_fps;
+		
+		int m_zooming;
+		glm::vec2 m_displacement;
+
+		bool m_vsync;
 		bool m_needEscape;
+		bool m_mouseFlagsUniforms[3];
+		bool m_boolFlagsUniforms[10];
+		bool m_keySpecialFlagsUniforms[4];
+		int m_keyTabUniform;
+
+		GLuint m_mouseFragLoc;
+		GLuint m_keysFragLoc;
+		GLuint m_flagsFragLoc;
+		GLuint m_keyTabFragLoc;
 };

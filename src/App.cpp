@@ -8,7 +8,7 @@ static void error_callback(int error, const char* description) {
 	fprintf(stderr, "GLFW Error: %s\n", description);
 }
 
-App::App():
+App::App() :
 	m_windowMode(windowMode::WINDOWED),
 	m_window(nullptr),
 	m_windowWidth(1280),
@@ -21,7 +21,19 @@ App::App():
 	m_fractalName("loop"),
 	m_uniforms{},
 	m_mvp{},
-	m_needEscape(false)
+	m_fps{},
+	m_zooming(0),
+	m_displacement(0, 0),
+	m_vsync(true),
+	m_needEscape(false),
+	m_mouseFlagsUniforms{},
+	m_boolFlagsUniforms{},
+	m_keySpecialFlagsUniforms{},
+	m_keyTabUniform(0),
+	m_mouseFragLoc(-1),
+	m_keysFragLoc(-1),
+	m_flagsFragLoc(-1),
+	m_keyTabFragLoc(-1)
 {
 	glfwSetErrorCallback(error_callback);
 	init();
@@ -37,6 +49,18 @@ void App::init() {
 	refreshResolution();
 	initGLEW();
 	initSurface();
+
+	for (unsigned int i = 0; i < MOUSE_BTN_COUNT; i++) {
+		m_mouseFlagsUniforms[i] = false;
+	}
+	
+	for (unsigned int i = 0; i < KEY_FLAGS_COUNT; i++) {
+		m_boolFlagsUniforms[i] = false;
+	}
+
+	for (unsigned int i = 0; i < KEY_SPECIAL_COUNT; i++) {
+		m_keySpecialFlagsUniforms[i] = false;
+	}
 }
 
 void App::close() {
@@ -66,9 +90,10 @@ void App::run() {
 	m_needEscape = false;
 
 	refreshResolution();
+	reset();
 
-	float currentFrame = (float)glfwGetTime();
-	float lastFrame = 0;
+	m_fps.currentTime = (float)glfwGetTime();
+	m_fps.lastFrame = 0;
 
 	m_uniforms.delta.value.f = 0;
 	m_uniforms.zoom.value.f = 1.0f;
@@ -79,12 +104,20 @@ void App::run() {
 	while (!glfwWindowShouldClose(m_window) && !m_needEscape)
 	{
 		// update
-		m_uniforms.time.value.f = (float)glfwGetTime();
-		currentFrame = m_uniforms.time.value.f * 1000;
-		m_uniforms.delta.value.f = currentFrame - lastFrame;
-		lastFrame = currentFrame;
+		updateFPS();
 
-		//m_uniforms.zoom.value.f -= 0.001f;
+
+		if (m_zooming != 0) {
+			m_uniforms.zoom.value.f *= std::pow(1.02f, m_zooming);
+		}
+
+		if (m_displacement.x != 0) {
+			m_uniforms.center.value.v2.x += m_displacement.x * 0.01f / m_uniforms.zoom.value.f;
+		}
+
+		if (m_displacement.y != 0) {
+			m_uniforms.center.value.v2.y += m_displacement.y * 0.01f / m_uniforms.zoom.value.f;
+		}
 
 		// render
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -121,6 +154,40 @@ void App::run() {
 		close();
 		init();
 	}
+}
+
+void App::updateFPS() {
+	// Time update
+	m_fps.currentTime = (float)glfwGetTime();
+	m_uniforms.time.value.f = m_fps.currentTime;
+
+	// delta update
+	m_uniforms.delta.value.f = m_fps.currentTime - m_fps.lastTime;
+
+	// nbFrame counter update
+	m_fps.nbFrames++;
+
+	if (m_uniforms.delta.value.f >= 1.0) { // If last cout was more than 1 sec ago
+		const double fps = 1.0 / m_uniforms.delta.value.f;
+
+		std::stringstream ss;
+		ss << "ShaderPlayground" << " [" << (m_fps.nbFrames-1) << " FPS]";
+
+		glfwSetWindowTitle(m_window, ss.str().c_str());
+
+		// reset counter
+		m_fps.nbFrames = 0;
+
+		// lastTime update
+		m_fps.lastTime  = m_fps.currentTime;
+	}
+}
+
+void App::reset() {
+	m_uniforms.zoom.value.f = 1.0f;
+	m_uniforms.center.value.v2 = glm::vec2(0.0f, 0.0f);
+	m_uniforms.increment.value.i = 0;
+	glfwSetTime(0);
 }
 
 void App::refreshResolution() {
@@ -163,6 +230,33 @@ void App::sendUniforms() {
 	glUniform1f(m_uniforms.delta.id, m_uniforms.delta.value.f);
 	glUniform1f(m_uniforms.ratio.id, m_uniforms.ratio.value.f);
 	glUniform1f(m_uniforms.zoom.id, m_uniforms.zoom.value.f);
+	glUniform1i(m_uniforms.increment.id, m_uniforms.increment.value.i);
+	glUniform1i(m_keyTabFragLoc, m_keyTabUniform);
+	glUniform1iv(m_mouseFragLoc, MOUSE_BTN_COUNT, (GLint*)m_mouseFlagsUniforms);
+	glUniform1iv(m_keysFragLoc, KEY_SPECIAL_COUNT, (GLint*)m_keySpecialFlagsUniforms);
+	glUniform1iv(m_flagsFragLoc, KEY_FLAGS_COUNT, (GLint*)m_boolFlagsUniforms);
+
+	/*std::cout << "flags: "
+		<< m_boolFlagsUniforms[0]
+		<< m_boolFlagsUniforms[1]
+		<< m_boolFlagsUniforms[2]
+		<< m_boolFlagsUniforms[3]
+		<< m_boolFlagsUniforms[4]
+		<< m_boolFlagsUniforms[5]
+		<< m_boolFlagsUniforms[6]
+		<< m_boolFlagsUniforms[7]
+		<< m_boolFlagsUniforms[8]
+		<< m_boolFlagsUniforms[9]
+		<< std::endl;
+
+	std::cout << "keys: "
+		<< m_keySpecialFlagsUniforms[0]
+		<< m_keySpecialFlagsUniforms[1]
+		<< m_keySpecialFlagsUniforms[2]
+		<< m_keySpecialFlagsUniforms[3]
+		<< std::endl;
+
+	std::cout << std::endl;*/
 }
 
 void App::createWindow() {
@@ -181,14 +275,89 @@ void App::createWindow() {
 
 	glfwMakeContextCurrent(m_window);
 	glfwSetWindowUserPointer(m_window, this);
+
+	// --- set event callbacks ---
+
+	// keyboard & mouse pos input callback
+	glfwSetKeyCallback(m_window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+		App* app = static_cast<App*>(glfwGetWindowUserPointer(window));
+		app->onKey(key, scancode, action, mods);
+	});
+
+	glfwSetCursorPosCallback(m_window, [](GLFWwindow* window, double xpos, double ypos) {
+		App* app = static_cast<App*>(glfwGetWindowUserPointer(window));
+		app->onMouseMove(xpos, ypos);
+	});
+
+	glfwSetMouseButtonCallback(m_window, [](GLFWwindow* window, int button, int action, int mods) {
+		App* app = static_cast<App*>(glfwGetWindowUserPointer(window));
+		app->onMouseButton(button, action, mods);
+	});
+
+	glfwSetWindowSizeCallback(m_window, [](GLFWwindow* window, int width, int height) {
+		App* app = static_cast<App*>(glfwGetWindowUserPointer(window));
+		app->onWindowResize(width, height);
+	});
 }
 
 
 void App::onKey(int key, int scancode, int action, int mods) {
+	if (action == GLFW_REPEAT) {
+		switch (key) {
+			case GLFW_KEY_I:
+				m_uniforms.increment.value.i++;
+				break;
+			case GLFW_KEY_D:
+				m_uniforms.increment.value.i--;
+				break;
+		}
+	}
+
 	if (action == GLFW_PRESS) {
 		switch (key) {
 			case  GLFW_KEY_ESCAPE:
 				m_needEscape = true;
+				break;
+			case GLFW_KEY_RIGHT_SHIFT:
+				m_keySpecialFlagsUniforms[0] = true;
+				break;
+			case GLFW_KEY_RIGHT_CONTROL:
+				m_keySpecialFlagsUniforms[1] = true;
+				break;
+			case GLFW_KEY_LEFT_ALT:
+				m_keySpecialFlagsUniforms[2] = true;
+				break;
+			case GLFW_KEY_SPACE:
+				m_keySpecialFlagsUniforms[3] = true;
+				break;
+			// ---
+			// Left Shift & Ctrl are for zooming
+			// Right Shift & Ctrl are for free uniforms
+			// Use of "+=" to cancel zoom if both are pressed.
+			case GLFW_KEY_LEFT_SHIFT:
+				m_zooming = 1;
+				break;
+			case GLFW_KEY_LEFT_CONTROL:
+				m_zooming = -1;
+				break;
+			// ---
+			case GLFW_KEY_LEFT:
+				m_displacement.x = -1;
+				break;
+			case GLFW_KEY_RIGHT:
+				m_displacement.x = 1;
+				break;
+			case GLFW_KEY_DOWN:
+				m_displacement.y = -1;
+				break;
+			case GLFW_KEY_UP:
+				m_displacement.y = 1;
+				break;
+			case GLFW_KEY_I:
+				m_uniforms.increment.value.i++;
+				break;
+			case GLFW_KEY_D:
+				m_uniforms.increment.value.i--;
 				break;
 		}
 	}
@@ -197,22 +366,87 @@ void App::onKey(int key, int scancode, int action, int mods) {
 			case GLFW_KEY_F5:
 				refreshShader();
 				break;
+			case GLFW_KEY_F8:
+				toggleVSync();
+				break;
+			case GLFW_KEY_F9:
+				reset();
+				break;
 			case GLFW_KEY_F11:
 				toggleFullscreen();
+				break;
+			case GLFW_KEY_0:
+			case GLFW_KEY_1:
+			case GLFW_KEY_2:
+			case GLFW_KEY_3:
+			case GLFW_KEY_4:
+			case GLFW_KEY_5:
+			case GLFW_KEY_6:
+			case GLFW_KEY_7:
+			case GLFW_KEY_8:
+			case GLFW_KEY_9:
+				m_boolFlagsUniforms[key - GLFW_KEY_0] = !m_boolFlagsUniforms[key - GLFW_KEY_0];
+				if (m_boolFlagsUniforms[1])
+					std::cout << m_boolFlagsUniforms[1] << std::endl;
+				break;
+			case GLFW_KEY_RIGHT_SHIFT:
+				m_keySpecialFlagsUniforms[0] = false;
+				break;
+			case GLFW_KEY_RIGHT_CONTROL:
+				m_keySpecialFlagsUniforms[1] = false;
+				break;
+			case GLFW_KEY_LEFT_ALT:
+				m_keySpecialFlagsUniforms[2] = false;
+				break;
+			case GLFW_KEY_SPACE:
+				m_keySpecialFlagsUniforms[3] = false;
+				break;
+			case GLFW_KEY_TAB:
+				m_keyTabUniform = (m_keyTabUniform + 1) % 3;
+				break;
+			case GLFW_KEY_LEFT_SHIFT:
+			case GLFW_KEY_LEFT_CONTROL:
+				m_zooming = 0;
+				break;
+			case GLFW_KEY_UP:
+			case GLFW_KEY_DOWN:
+				m_displacement.y = 0;
+				break;
+			case GLFW_KEY_LEFT:
+			case GLFW_KEY_RIGHT:
+				m_displacement.x = 0;
 				break;
 		}
 	}
 }
+
+void App::onMouseButton(int button, int action, int mods) {
+	switch (button) {
+		case GLFW_MOUSE_BUTTON_LEFT:
+			m_mouseFlagsUniforms[0] = action == GLFW_PRESS;
+			break;
+		case GLFW_MOUSE_BUTTON_MIDDLE:
+			m_mouseFlagsUniforms[1] = action == GLFW_PRESS;
+			break;
+		case GLFW_MOUSE_BUTTON_RIGHT:
+			m_mouseFlagsUniforms[2] = action == GLFW_PRESS;
+			break;
+	}
+}
+
 
 void App::onMouseMove(double xpos, double ypos) {
 	m_uniforms.mouse.value.v2.x = (float)xpos;
 	m_uniforms.mouse.value.v2.y = (float)ypos;
 }
 
+void App::onWindowResize(int width, int height) {
+	refreshResolution();
+	refreshSurface();
+}
+
 void App::toggleFullscreen() {
 	const GLFWvidmode* videoMode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-
-	GLFW_DONT_CARE;
 
 	// windowed -> fullscreen
 	if (m_windowMode == windowMode::WINDOWED) {
@@ -227,8 +461,18 @@ void App::toggleFullscreen() {
 		m_windowMode = windowMode::WINDOWED;
 	}
 
-	refreshResolution();
-	refreshSurface();
+	onWindowResize(0, 0);
+}
+
+void App::toggleVSync() {
+	m_vsync = !m_vsync;
+
+	if (m_vsync) {
+		glfwSwapInterval(1);
+	}
+	else {
+		glfwSwapInterval(0);
+	}
 }
 
 
@@ -240,14 +484,14 @@ void App::initGLFW() {
 	}
 
 	// Hint
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, OPENGL_VERSION_MAJOR);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, OPENGL_VERSION_MINOR);
 
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
 
 	glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 }
 
 
@@ -266,17 +510,6 @@ void App::initGLEW() {
 	glEnable(GL_MULTISAMPLE);
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-	// keyboard & mouse pos input callback
-	glfwSetKeyCallback(m_window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
-		App* app = static_cast<App*>(glfwGetWindowUserPointer(window));
-		app->onKey(key, scancode, action, mods);
-	});
-
-	glfwSetCursorPosCallback(m_window, [](GLFWwindow* window, double xpos, double ypos) {
-		App* app = static_cast<App*>(glfwGetWindowUserPointer(window));
-		app->onMouseMove(xpos, ypos);
-	});
 
 	glfwSwapInterval(1);
 }
@@ -301,6 +534,8 @@ bool App::initShader() {
 	m_uniforms.ratio			= { -1, 0 };
 	m_uniforms.zoom				= { -1, 0 };
 
+	m_uniforms.center.value.v2	= glm::vec2(0.0f, 0.0f);
+
 	// retrieve layout (location = ?) for UNIFORMS
 	m_uniforms.mvp.id			= glGetUniformLocation(m_shader.id, "MVP");
 	m_uniforms.m.id				= glGetUniformLocation(m_shader.id, "M");
@@ -313,6 +548,11 @@ bool App::initShader() {
 	m_uniforms.delta.id			= glGetUniformLocation(m_shader.id, "fDelta");
 	m_uniforms.ratio.id			= glGetUniformLocation(m_shader.id, "fRatio");
 	m_uniforms.zoom.id			= glGetUniformLocation(m_shader.id, "fZoom");
+	m_uniforms.increment.id		= glGetUniformLocation(m_shader.id, "iIncrement");
+	m_mouseFragLoc				= glGetUniformLocation(m_shader.id, "vbMousePressed");
+	m_keysFragLoc				= glGetUniformLocation(m_shader.id, "vbKeyPressed");
+	m_flagsFragLoc				= glGetUniformLocation(m_shader.id, "vbFlags");
+	m_keyTabFragLoc				= glGetUniformLocation(m_shader.id, "iMode");
 
 	return true;
 }

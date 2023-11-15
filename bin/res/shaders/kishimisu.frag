@@ -4,8 +4,9 @@
  * 
  * This is for testing purposes, check if time and resolution uniforms are working properly.
  */
+#version 460 core
 
-vec3 palette( float t ) {
+vec3 palette(float t) {
     vec3 a = vec3(0.5, 0.5, 0.5);
     vec3 b = vec3(0.5, 0.5, 0.5);
     vec3 c = vec3(1.0, 1.0, 1.0);

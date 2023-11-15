@@ -70,14 +70,16 @@ bool readAndPrecomputeFile(const std::string& filepath, std::string& shaderConte
         std::string lineBuffer;
 
         // ENHANCEMENT : for scaling, could be defined by rules and splitted and managed by an external entity
-        const std::string identifier = "#include";
-        const auto identifierSize = identifier.size();
+        const std::string includeIdentifier = "#include";
+        const auto includeIdSize = includeIdentifier.size();
+
+        const std::string versionIdentifier = "#version";
 
         while (std::getline(shaderFile, lineBuffer)) {
-            auto identifierIdx = lineBuffer.find(identifier);
+            auto identifierIdx = lineBuffer.find(includeIdentifier);
 
             if (identifierIdx != lineBuffer.npos) {
-                lineBuffer.erase(0, identifierIdx + identifierSize);
+                lineBuffer.erase(0, identifierIdx + includeIdSize);
                 lineBuffer = trim(lineBuffer);
 
                 // not form of '#include <>' with a character between tags
@@ -93,6 +95,9 @@ bool readAndPrecomputeFile(const std::string& filepath, std::string& shaderConte
                     shaderFile.close();
                     return false;
                 }
+            }
+            else if ((identifierIdx = lineBuffer.find(versionIdentifier)) != lineBuffer.npos) {
+                continue;
             }
 
             shaderContent += lineBuffer + '\n';
@@ -198,6 +203,15 @@ bool compileShader(GLuint& shader, const std::string& type, const std::string& f
             uniform float fDelta;
             uniform float fRatio;
             uniform float fZoom;
+            uniform int iIncrement;
+
+            uniform int iMode;
+
+            uniform bool vbMousePressed[3];
+            uniform bool vbKeyPressed[4];
+            uniform bool vbFlags[10];
+
+
 
             out vec4 fragColor;
 
