@@ -9,7 +9,8 @@
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/bin",
             "environment": [],
-            "console": "externalTerminal"
+            "console": "integratedTerminal",
+            "preLaunchTask": "CMake Build Debug"
         }
     ],
     "version": "2.0.0"

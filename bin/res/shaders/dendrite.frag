@@ -113,11 +113,11 @@ vec3 dendriteColor(float density, float dist, vec2 uv) {
     vec3 baseColor = vec3(0.1, 0.3, 0.6); // Bleu de base
     
     // Modification selon les flags booléens
-    if (vbFlags[0]) baseColor = vec3(0.8, 0.3, 0.1); // Orange
-    if (vbFlags[1]) baseColor = vec3(0.2, 0.8, 0.3); // Vert
-    if (vbFlags[2]) baseColor = vec3(0.9, 0.1, 0.5); // Rose
-    if (vbFlags[3]) baseColor = vec3(0.7, 0.2, 0.8); // Violet
-    if (vbFlags[4]) baseColor = vec3(0.1, 0.9, 0.9); // Cyan
+    if (vbFlags[0] == 1) baseColor = vec3(0.8, 0.3, 0.1); // Orange
+    else if (vbFlags[1] == 1) baseColor = vec3(0.2, 0.8, 0.3); // Vert
+    else if (vbFlags[2] == 1) baseColor = vec3(0.9, 0.1, 0.5); // Rose
+    else if (vbFlags[3] == 1) baseColor = vec3(0.7, 0.2, 0.8); // Violet
+    else if (vbFlags[4] == 1) baseColor = vec3(0.1, 0.9, 0.9); // Cyan
     
     // Gradient basé sur la distance au centre
     float centerDist = length(uv);
@@ -142,7 +142,7 @@ void mainImage() {
     uv = (uv / fZoom) + fvCenter;
     
     // Temps effectif (pause avec espace)
-    float effectiveTime = vbKeyPressed[0] ? 0.0 : fTime;
+    float effectiveTime = (vbKeyPressed[0] == 1) ? 0.0 : fTime;
     
     // Complexité basée sur iIncrement
     float complexity = 1.0 + float(iIncrement) * 0.1;

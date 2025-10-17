@@ -51,15 +51,15 @@ void App::init() {
 	initSurface();
 
 	for (unsigned int i = 0; i < MOUSE_BTN_COUNT; i++) {
-		m_mouseFlagsUniforms[i] = false;
+		m_mouseFlagsUniforms[i] = GL_FALSE;
 	}
 	
 	for (unsigned int i = 0; i < KEY_FLAGS_COUNT; i++) {
-		m_boolFlagsUniforms[i] = false;
+		m_boolFlagsUniforms[i] = GL_FALSE;
 	}
 
 	for (unsigned int i = 0; i < KEY_SPECIAL_COUNT; i++) {
-		m_keySpecialFlagsUniforms[i] = false;
+		m_keySpecialFlagsUniforms[i] = GL_FALSE;
 	}
 }
 
@@ -319,16 +319,16 @@ void App::onKey(int key, int scancode, int action, int mods) {
 				m_needEscape = true;
 				break;
 			case GLFW_KEY_RIGHT_SHIFT:
-				m_keySpecialFlagsUniforms[0] = true;
+				m_keySpecialFlagsUniforms[0] = GL_TRUE;
 				break;
 			case GLFW_KEY_RIGHT_CONTROL:
-				m_keySpecialFlagsUniforms[1] = true;
+				m_keySpecialFlagsUniforms[1] = GL_TRUE;
 				break;
 			case GLFW_KEY_LEFT_ALT:
-				m_keySpecialFlagsUniforms[2] = true;
+				m_keySpecialFlagsUniforms[2] = GL_TRUE;
 				break;
 			case GLFW_KEY_SPACE:
-				m_keySpecialFlagsUniforms[3] = true;
+				m_keySpecialFlagsUniforms[3] = GL_TRUE;
 				break;
 			// ---
 			// Left Shift & Ctrl are for zooming
@@ -385,21 +385,21 @@ void App::onKey(int key, int scancode, int action, int mods) {
 			case GLFW_KEY_7:
 			case GLFW_KEY_8:
 			case GLFW_KEY_9:
-				m_boolFlagsUniforms[key - GLFW_KEY_0] = !m_boolFlagsUniforms[key - GLFW_KEY_0];
-				/*if (m_boolFlagsUniforms[1])
-					std::cout << m_boolFlagsUniforms[1] << std::endl;*/
+				m_boolFlagsUniforms[key - GLFW_KEY_0] = m_boolFlagsUniforms[key - GLFW_KEY_0] == GL_TRUE
+					? GL_FALSE
+					: GL_TRUE;
 				break;
 			case GLFW_KEY_RIGHT_SHIFT:
-				m_keySpecialFlagsUniforms[0] = false;
+				m_keySpecialFlagsUniforms[0] = GL_FALSE;
 				break;
 			case GLFW_KEY_RIGHT_CONTROL:
-				m_keySpecialFlagsUniforms[1] = false;
+				m_keySpecialFlagsUniforms[1] = GL_FALSE;
 				break;
 			case GLFW_KEY_LEFT_ALT:
-				m_keySpecialFlagsUniforms[2] = false;
+				m_keySpecialFlagsUniforms[2] = GL_FALSE;
 				break;
 			case GLFW_KEY_SPACE:
-				m_keySpecialFlagsUniforms[3] = false;
+				m_keySpecialFlagsUniforms[3] = GL_FALSE;
 				break;
 			case GLFW_KEY_TAB:
 				m_keyTabUniform = (m_keyTabUniform + 1) % 3;

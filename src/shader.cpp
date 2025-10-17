@@ -207,9 +207,9 @@ bool compileShader(GLuint& shader, const std::string& type, const std::string& f
 
             uniform int iMode;
 
-            uniform bool vbMousePressed[3];
-            uniform bool vbKeyPressed[4];
-            uniform bool vbFlags[10];
+            uniform int vbMousePressed[3];
+            uniform int vbKeyPressed[4];
+            uniform int vbFlags[10];
 
 
 

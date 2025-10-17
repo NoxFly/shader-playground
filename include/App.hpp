@@ -146,11 +146,13 @@ class App {
 
 		bool m_vsync;
 		bool m_needEscape;
-		bool m_mouseFlagsUniforms[3];
-		bool m_boolFlagsUniforms[10];
-		bool m_keySpecialFlagsUniforms[4];
+		
+		GLint m_mouseFlagsUniforms[MOUSE_BTN_COUNT];
+		GLint m_boolFlagsUniforms[KEY_FLAGS_COUNT];
+		GLint m_keySpecialFlagsUniforms[KEY_SPECIAL_COUNT];
+		
 		int m_keyTabUniform;
-
+		
 		GLuint m_mouseFragLoc;
 		GLuint m_keysFragLoc;
 		GLuint m_flagsFragLoc;
