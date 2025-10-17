@@ -1,5 +1,5 @@
 /**
- * @author Dorian Thivolle
+ * @author NoxFly
  */
 
 #include <shader.hpp>

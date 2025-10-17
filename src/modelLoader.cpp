@@ -1,5 +1,5 @@
 /**
- * @author Dorian Thivolle
+ * @author NoxFly
  */
 
 #include "modelLoader.hpp"
@@ -39,7 +39,7 @@ model loadModelToVRAM(
 	// lock layout locations so the program knows which data corresponds to what
 
 	// position attribute
-	// glVertexAttribPoint(layoutLocation, bufferCount, float, flase, combien pour faire une ligne, le décalage dans la ligne)
+	// glVertexAttribPoint(layoutLocation, bufferCount, float, flase, combien pour faire une ligne, le dï¿½calage dans la ligne)
 	glVertexAttribPointer(0, dimension, GL_FLOAT, GL_FALSE, lineSize, (void*)vertexOffset);
 	glEnableVertexAttribArray(0); // layout location 0
 
@@ -85,7 +85,7 @@ model loadModelToVRAM(
 	// lock layout locations so the program knows which data corresponds to what
 
 	// position attribute
-	// glVertexAttribPoint(layoutLocation, bufferCount, float, flase, combien pour faire une ligne, le décalage dans la ligne)
+	// glVertexAttribPoint(layoutLocation, bufferCount, float, flase, combien pour faire une ligne, le dï¿½calage dans la ligne)
 	glVertexAttribPointer(0, dimension, GL_FLOAT, GL_FALSE, lineSize, (void*)vertexOffset);
 	glEnableVertexAttribArray(0); // layout location 0
 

@@ -1,3 +1,9 @@
+/**
+ * @author NoxFly
+ *
+ * Optimizations from wikipedia :
+ * https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set
+ */
 vec3 hsv2rgb(float hue, float saturation, float value) {
 	vec3 rgb = vec3(0.0);
 

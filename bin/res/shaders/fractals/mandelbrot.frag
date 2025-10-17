@@ -1,5 +1,5 @@
 /**
- * @author Dorian Thivolle
+ * @author NoxFly
  *
  * Optimizations from wikipedia :
  * https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set

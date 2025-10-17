@@ -1,3 +1,9 @@
+/**
+ * @author NoxFly
+ *
+ * Optimizations from wikipedia :
+ * https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set
+ */
 const float PI = 3.1415926535;
 const float TAU = PI * 2.0;
 
