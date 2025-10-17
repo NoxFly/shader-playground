@@ -14,209 +14,166 @@
 #version 460 core
 
 #include <helpers/common>
+#include <helpers/colorUtils>
 
-// Fonction de hash pour générer des positions pseudo-aléatoires
-float hash(vec2 p) {
-    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+// Paramètres de la dendrite
+const int MAX_ITERATIONS = 150;
+const float BRANCH_THRESHOLD = 0.45;
+const float GROWTH_SPEED = 0.3;
+
+/**
+ * Calcule la distance au champ de dendrite le plus proche
+ * Simule une structure fractale de croissance
+ */
+float dendriteField(vec2 p, float t, int mode) {
+    float dist = length(p); // Distance au centre
+    float angle = atan(p.y, p.x);
+    
+    // Nombre de branches principales selon le mode
+    float branches = mode == 0 ? 6.0 : (mode == 1 ? 8.0 : 4.0);
+    
+    // Pattern de ramification angulaire
+    float angularPattern = sin(angle * branches);
+    
+    // Complexité de la croissance (contrôlée par iIncrement)
+    float complexity = 1.0 + float(iIncrement) * 0.1;
+    
+    // Croissance radiale avec bruit
+    float radialGrowth = 0.0;
+    for (int i = 0; i < 5; i++) {
+        float scale = pow(2.0, float(i)) * complexity;
+        vec2 noisePos = p * scale + vec2(t * GROWTH_SPEED);
+        radialGrowth += noise(noisePos) / pow(2.0, float(i));
+    }
+    
+    // Fonction de densité selon le mode
+    float density;
+    if (mode == 0) {
+        // Mode géométrique : branches régulières
+        density = angularPattern * 0.5 + 0.5;
+    } else if (mode == 1) {
+        // Mode organique : croissance irrégulière
+        density = radialGrowth;
+    } else {
+        // Mode cristallin : symétrie hexagonale
+        float hex = abs(sin(angle * branches)) + abs(cos(angle * branches * 0.5));
+        density = hex * radialGrowth;
+    }
+    
+    // Atténuation radiale (croissance limitée dans le temps)
+    float maxRadius = t * 0.5 + 0.5;
+    float growth = smoothstep(maxRadius, maxRadius - 0.3, dist);
+    
+    return density * growth;
 }
 
-vec2 hash2(vec2 p) {
-    return fract(sin(vec2(
-        dot(p, vec2(127.1, 311.7)),
-        dot(p, vec2(269.5, 183.3))
-    )) * 43758.5453);
+/**
+ * Calcule la structure de dendrite avec détails multi-échelles
+ */
+float dendrite(vec2 p, float t, int mode) {
+    float structure = 0.0;
+    float amplitude = 1.0;
+    vec2 pos = p;
+    
+    // Pause si espace enfoncé
+    float time = vbKeyPressed[0] == 1 ? 0.0 : t;
+    
+    // Accumulation multi-échelle
+    for (int i = 0; i < 4; i++) {
+        float scale = pow(2.0, float(i));
+        structure += dendriteField(pos * scale, time, mode) * amplitude;
+        amplitude *= 0.5;
+    }
+    
+    return structure;
 }
 
-// Fonction de bruit pour l'aspect organique
-float noise(vec2 p) {
-    vec2 i = floor(p);
-    vec2 f = fract(p);
-    f = f * f * (3.0 - 2.0 * f);
+/**
+ * Calcule la couleur selon la structure de dendrite
+ */
+vec3 getDendriteColor(float structure, float dist, int mode) {
+    vec3 color = vec3(0.0);
     
-    float a = hash(i);
-    float b = hash(i + vec2(1.0, 0.0));
-    float c = hash(i + vec2(0.0, 1.0));
-    float d = hash(i + vec2(1.0, 1.0));
+    // Couleur de base selon le mode
+    vec3 baseColor;
     
-    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
-}
-
-// Génère une branche dendritique
-float dendriteBranch(vec2 p, float angle, float time, int branchId) {
-    // Rotation
-    float ca = cos(angle);
-    float sa = sin(angle);
-    vec2 rotP = vec2(ca * p.x - sa * p.y, sa * p.x + ca * p.y);
-    
-    // Longueur de la branche basée sur le temps
-    float growthSpeed = 0.3 + 0.1 * float(branchId % 3);
-    float branchLength = time * growthSpeed;
-    
-    // Distance à la branche principale
-    float dist = abs(rotP.y);
-    
-    // Épaisseur qui diminue le long de la branche
-    float thickness = 0.02 * (1.0 - smoothstep(0.0, branchLength, rotP.x));
-    
-    // Modulation organique si mode 1
-    if (iMode == 1) {
-        float organicNoise = noise(rotP * 5.0 + fTime * 0.5) * 0.01;
-        dist += organicNoise;
-        thickness *= (1.0 + noise(rotP * 3.0) * 0.3);
-    }
-    // Modulation cristalline si mode 2
-    else if (iMode == 2) {
-        float crystalPattern = abs(sin(rotP.x * 20.0 + fTime)) * 0.005;
-        dist += crystalPattern;
-        thickness *= 0.8;
+    if (mode == 0) {
+        // Géométrique : bleu-cyan
+        baseColor = vec3(0.2, 0.5, 1.0);
+    } else if (mode == 1) {
+        // Organique : vert-jaune
+        baseColor = vec3(0.3, 0.9, 0.4);
+    } else {
+        // Cristallin : violet-magenta
+        baseColor = vec3(0.8, 0.2, 1.0);
     }
     
-    // La branche est visible si on est dans sa longueur et épaisseur
-    float branch = 0.0;
-    if (rotP.x > 0.0 && rotP.x < branchLength) {
-        branch = smoothstep(thickness + 0.01, thickness, dist);
+    // Application des flags de couleur (touches 0-9)
+    vec3 colorMod = vec3(1.0);
+    if (vbFlags[0] == 1) colorMod.r *= 1.5;
+    if (vbFlags[1] == 1) colorMod.g *= 1.5;
+    if (vbFlags[2] == 1) colorMod.b *= 1.5;
+    if (vbFlags[3] == 1) colorMod *= 0.5; // assombrir
+    if (vbFlags[4] == 1) colorMod = 1.0 - colorMod; // inverser
+    
+    // Couleur en fonction de la distance au centre
+    float hue = dist * 50.0 + structure * 100.0;
+    vec3 rainbowColor = hsv2rgb(mod(hue, 360.0), 0.8, 1.0);
+    
+    // Mélange selon les flags
+    if (vbFlags[5] == 1) {
+        color = rainbowColor * colorMod;
+    } else {
+        color = baseColor * colorMod;
     }
     
-    return branch;
-}
-
-// Génère des sous-branches récursives
-float subBranches(vec2 p, float baseAngle, float time, int depth, int branchId) {
-    if (depth <= 0 || time < 0.5) return 0.0;
+    // Intensité basée sur la structure
+    float intensity = smoothstep(BRANCH_THRESHOLD - 0.2, BRANCH_THRESHOLD + 0.1, structure);
+    color *= intensity;
     
-    float result = 0.0;
-    float timeOffset = float(depth) * 0.5;
-    float adjustedTime = max(0.0, time - timeOffset);
+    // Points lumineux aux extrémités
+    float glow = smoothstep(BRANCH_THRESHOLD + 0.15, BRANCH_THRESHOLD + 0.3, structure);
+    color += vec3(1.0) * glow * 0.5;
     
-    // Nombre de sous-branches basé sur la complexité
-    int numSubBranches = 2 + (iIncrement % 3);
-    
-    for (int i = 0; i < numSubBranches; i++) {
-        float branchAngle = baseAngle + (float(i) - 0.5) * (PI / 3.0);
-        
-        // Position de départ de la sous-branche
-        float parentLength = adjustedTime * 0.3;
-        float branchStartDist = parentLength * (0.3 + 0.4 * hash(vec2(float(depth), float(i))));
-        
-        vec2 branchStart = vec2(cos(baseAngle), sin(baseAngle)) * branchStartDist;
-        vec2 localP = p - branchStart;
-        
-        float subBranch = dendriteBranch(localP, branchAngle, adjustedTime, branchId * 10 + i);
-        result = max(result, subBranch);
-    }
-    
-    return result;
-}
-
-// Palette de couleurs pour la dendrite
-vec3 dendriteColor(float density, float dist, vec2 uv) {
-    vec3 baseColor = vec3(0.1, 0.3, 0.6); // Bleu de base
-    
-    // Modification selon les flags booléens
-    if (vbFlags[0] == 1) baseColor = vec3(0.8, 0.3, 0.1); // Orange
-    else if (vbFlags[1] == 1) baseColor = vec3(0.2, 0.8, 0.3); // Vert
-    else if (vbFlags[2] == 1) baseColor = vec3(0.9, 0.1, 0.5); // Rose
-    else if (vbFlags[3] == 1) baseColor = vec3(0.7, 0.2, 0.8); // Violet
-    else if (vbFlags[4] == 1) baseColor = vec3(0.1, 0.9, 0.9); // Cyan
-    
-    // Gradient basé sur la distance au centre
-    float centerDist = length(uv);
-    vec3 gradientColor = mix(baseColor, baseColor * 1.5, density);
-    
-    // Mode organique : couleurs plus chaudes
-    if (iMode == 1) {
-        gradientColor = mix(gradientColor, vec3(0.9, 0.6, 0.3), 0.3);
-    }
-    // Mode cristallin : couleurs plus froides et brillantes
-    else if (iMode == 2) {
-        gradientColor = mix(gradientColor, vec3(0.3, 0.7, 1.0), 0.4);
-        gradientColor += vec3(0.3) * (1.0 - smoothstep(0.0, 0.01, dist));
-    }
-    
-    return gradientColor;
+    return color;
 }
 
 void mainImage() {
-    // Coordonnées normalisées avec zoom et centre
-    vec2 uv = (fragCoord - uvResolution.xy * 0.5) / (uvResolution.y * 0.5);
-    uv = (uv / fZoom) + fvCenter;
+    // Coordonnées normalisées centrées
+    vec2 uv = (fragCoord - uvResolution * 0.5) / uvResolution.y;
     
-    // Temps effectif (pause avec espace)
-    float effectiveTime = (vbKeyPressed[0] == 1) ? 0.0 : fTime;
+    // Application du zoom et du centre de caméra
+    uv /= fZoom;
+    uv += fvCenter / uvResolution.y;
     
-    // Complexité basée sur iIncrement
-    float complexity = 1.0 + float(iIncrement) * 0.1;
-    effectiveTime *= complexity;
+    // Distance au centre
+    float dist = length(uv);
     
-    // Initialisation
-    float dendrite = 0.0;
-    float minDist = 1000.0;
+    // Temps (peut être pausé avec espace)
+    float time = vbKeyPressed[0] == 1 ? 0.0 : fTime;
     
-    // Nombre de branches principales
-    int numMainBranches = 6 + (iIncrement % 4);
+    // Calcul de la structure de dendrite
+    float structure = dendrite(uv, time, iMode);
     
-    // Génération des branches principales
-    for (int i = 0; i < numMainBranches; i++) {
-        float angle = (TAU / float(numMainBranches)) * float(i);
-        
-        // Offset de temps pour que les branches ne poussent pas toutes en même temps
-        float timeOffset = float(i) * 0.3;
-        float branchTime = max(0.0, effectiveTime - timeOffset);
-        
-        // Branche principale
-        float branch = dendriteBranch(uv, angle, branchTime, i);
-        dendrite = max(dendrite, branch);
-        
-        // Sous-branches (récursivité simulée avec 2 niveaux)
-        float sub1 = subBranches(uv, angle, branchTime, 1, i);
-        dendrite = max(dendrite, sub1);
-        
-        if (iIncrement > 5) {
-            float sub2 = subBranches(uv, angle, branchTime, 2, i);
-            dendrite = max(dendrite, sub2 * 0.7);
-        }
-        
-        // Calculer la distance minimale pour les effets de lueur
-        float ca = cos(angle);
-        float sa = sin(angle);
-        vec2 rotP = vec2(ca * uv.x - sa * uv.y, sa * uv.x + ca * uv.y);
-        float dist = abs(rotP.y);
-        minDist = min(minDist, dist);
+    // Calcul de la couleur
+    vec3 color = getDendriteColor(structure, dist, iMode);
+    
+    // Fond avec dégradé radial
+    vec3 background = vec3(0.02, 0.02, 0.05) * (1.0 - dist * 0.3);
+    
+    // Composition finale
+    color += background;
+    
+    // Post-processing : vignetage
+    if (vbFlags[6] == 1) {
+        float vignette = 1.0 - smoothstep(0.5, 1.5, dist);
+        color *= vignette;
     }
     
-    // Noyau central
-    float centerSize = 0.05 + sin(effectiveTime) * 0.01;
-    float center = smoothstep(centerSize + 0.01, centerSize - 0.01, length(uv));
-    dendrite = max(dendrite, center);
-    
-    // Lueur autour de la dendrite
-    float glow = exp(-minDist * 30.0) * 0.3;
-    
-    // Couleur finale
-    vec3 color = dendriteColor(dendrite + glow, minDist, uv);
-    color *= (dendrite + glow * 0.5);
-    
-    // Fond
-    vec3 bgColor = vec3(0.02, 0.02, 0.05);
-    
-    // Mode organique : fond plus chaud
-    if (iMode == 1) {
-        bgColor = vec3(0.05, 0.03, 0.02);
-    }
-    // Mode cristallin : effet de grille
-    else if (iMode == 2) {
-        float grid = max(
-            smoothstep(0.02, 0.0, fract(uv.x * 10.0) - 0.5),
-            smoothstep(0.02, 0.0, fract(uv.y * 10.0) - 0.5)
-        ) * 0.1;
-        bgColor += vec3(0.0, 0.05, 0.1) + vec3(grid);
+    // Post-processing : glow
+    if (vbFlags[7] == 1) {
+        color += vec3(0.1, 0.2, 0.3) * smoothstep(0.6, 0.4, dist);
     }
     
-    vec3 finalColor = mix(bgColor, color, dendrite + glow);
-    
-    // Post-processing : légère vignette
-    float vignette = 1.0 - length(uv) * 0.3;
-    finalColor *= vignette;
-    
-    fragColor = vec4(finalColor, 1.0);
+    fragColor = vec4(color, 1.0);
 }
