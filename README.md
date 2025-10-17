@@ -44,7 +44,16 @@ Your fragment shaders are included in the main fragment shader code. So, you don
 Your fragment must be located in the `res/shaders/` folder.<br>
 You can use the `#include <path/to/chunk>` directive to include other `.glsl` files, making it easy to factorize your code and make it more reusable. Do not specify the extension while including. It will search in the `res/shaders/` folder.
 Your fragment shader file must contain a `vec3 mainImage()` function, which will be called by the `main()` fragment shader function at runtime.
-You must assign a color to the predefined `vec4 FragColor` variable to set the pixel's color.
+You must assign a color to the predefined `vec4 fragColor` variable to set the pixel's color. For example :
+
+```glsl
+// file : res/shaders/my_shader.frag
+// launch it via the console entering "my_shader"
+
+void mainImage() {
+	fragColor = vec4(1.0); // white color
+}
+```
 
 No circular dependencies can happen, because this directive is handled only in the `.frag` files, and only `.glsl` can be included.
 
@@ -55,7 +64,7 @@ No circular dependencies can happen, because this directive is handled only in t
 
 In your shaders, you can access various variables. Here's the list :
 
-* `FragCoord`: a vec2 with current pixel coordinates, between 0 and the window's resolution.
+* `fragCoord`: a vec2 with current pixel coordinates, between 0 and the window's resolution.
 * `MVP`: a mat4, the model-view-projection matrix.
 * `M`: a mat4, the model matrix.
 * `V`: a mat4, the view matrix.

@@ -386,8 +386,8 @@ void App::onKey(int key, int scancode, int action, int mods) {
 			case GLFW_KEY_8:
 			case GLFW_KEY_9:
 				m_boolFlagsUniforms[key - GLFW_KEY_0] = !m_boolFlagsUniforms[key - GLFW_KEY_0];
-				if (m_boolFlagsUniforms[1])
-					std::cout << m_boolFlagsUniforms[1] << std::endl;
+				/*if (m_boolFlagsUniforms[1])
+					std::cout << m_boolFlagsUniforms[1] << std::endl;*/
 				break;
 			case GLFW_KEY_RIGHT_SHIFT:
 				m_keySpecialFlagsUniforms[0] = false;
